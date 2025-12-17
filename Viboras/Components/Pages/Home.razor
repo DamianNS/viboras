@@ -1,0 +1,100 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager Navigation
+@rendermode InteractiveServer 
+
+<PageTitle>Home</PageTitle>
+
+<h1>¡Bienvenido a Víboras!</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>Ingresa tu nombre</h3>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Escribe tu nombre aquí..." 
+                   @bind="nombreUsuario" @bind:event="oninput" 
+                    disabled="@procesando" />
+            <button class="btn btn-primary" type="button" @onclick="MostrarSaludo" 
+                    disabled="@(procesando || string.IsNullOrWhiteSpace(nombreUsuario))">
+                @if (procesando)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                Entrar al Lobby @nombreUsuario
+            </button>
+        </div>
+        
+        @if (!string.IsNullOrWhiteSpace(mensajeSaludo))
+        {
+            <div class="alert alert-success mt-3">
+                <h4>@mensajeSaludo</h4>
+                <p>¡Esperamos que disfrutes usando nuestra aplicación!</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string nombreUsuario = "";
+    private string mensajeSaludo = "";
+    private bool procesando = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender){
+            try
+            {
+                var resultado = await SessionStorage.GetAsync<string>("NombreJugador");
+                if (resultado.Success && !string.IsNullOrWhiteSpace(resultado.Value))
+                {
+                    // Si ya hay un nombre guardado, ir directo al lobby
+                    Navigation.NavigateTo("/lobby");
+                }
+            }
+            catch
+            {
+                // Continuar normalmente si hay error
+            }
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+
+    private async Task MostrarSaludo()
+    {
+        if (procesando) return;
+
+        if (!string.IsNullOrWhiteSpace(nombreUsuario))
+        {
+            procesando = true;
+            mensajeSaludo = $"¡Hola, {nombreUsuario.Trim()}!";
+            
+            try
+            {
+                // Guardar nombre en sesión
+                await SessionStorage.SetAsync("NombreJugador", nombreUsuario.Trim());
+                
+                // Mostrar mensaje por un momento antes de redirigir
+                StateHasChanged();
+                await Task.Delay(1500);
+                
+                // Redirigir al lobby
+                Navigation.NavigateTo("/lobby");
+            }
+            catch
+            {
+                mensajeSaludo = "Error al guardar el nombre. Intenta de nuevo.";
+                procesando = false;
+            }
+        }
+        else
+        {
+            mensajeSaludo = "¡Por favor, ingresa tu nombre primero!";
+        }
+    }
+}

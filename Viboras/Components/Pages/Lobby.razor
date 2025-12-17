@@ -1,0 +1,241 @@
+@page "/lobby"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager Navigation
+@rendermode InteractiveServer 
+
+<PageTitle>Lobby - Víboras</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>¡Bienvenido al Lobby, @nombreJugador!</h2>
+                <button class="btn btn-outline-secondary" @onclick="VolverAlInicio">
+                    <i class="bi bi-arrow-left"></i> Cambiar Nombre
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Crear Partida -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="bi bi-plus-circle"></i> Crear Nueva Partida</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la Partida</label>
+                        <input type="text" class="form-control" @bind="nombrePartida" placeholder="Mi partida épica..." />
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Max. Jugadores</label>
+                            <select class="form-select" @bind="maxJugadores">
+                                <option value="2">2 Jugadores</option>
+                                <option value="3">3 Jugadores</option>
+                                <option value="4">4 Jugadores</option>
+                                <option value="6">6 Jugadores</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Dificultad</label>
+                            <select class="form-select" @bind="dificultad">
+                                <option value="Fácil">Fácil</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Difícil">Difícil</option>
+                                <option value="Extremo">Extremo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" @bind="partidaPrivada" id="partidaPrivada">
+                            <label class="form-check-label" for="partidaPrivada">
+                                Partida Privada
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn btn-success btn-lg w-100" @onclick="CrearPartida" disabled="@string.IsNullOrWhiteSpace(nombrePartida)">
+                        <i class="bi bi-rocket-takeoff"></i> Crear Partida
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buscar Partidas -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-search"></i> Unirse a Partida</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" @bind="buscarTexto" placeholder="Buscar partidas..." />
+                            <button class="btn btn-outline-primary" type="button" @onclick="BuscarPartidas">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button class="btn btn-primary w-100" @onclick="ActualizarLista">
+                            <i class="bi bi-arrow-clockwise"></i> Actualizar Lista
+                        </button>
+                    </div>
+
+                    <div class="partidas-disponibles" style="max-height: 300px; overflow-y: auto;">
+                        @if (partidasDisponibles.Any())
+                        {
+                            @foreach (var partida in partidasDisponibles)
+                            {
+                                <div class="card mb-2">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">@partida.Nombre</h6>
+                                                <small class="text-muted">
+                                                    @partida.JugadoresActuales/@partida.MaxJugadores jugadores | @partida.Dificultad
+                                                    @if (partida.EsPrivada) { <span class="badge bg-warning text-dark">Privada</span> }
+                                                </small>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => UnirseAPartida(partida.Id)">
+                                                <i class="bi bi-door-open"></i> Unirse
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-inbox display-4"></i>
+                                <p class="mt-2">No hay partidas disponibles</p>
+                                <small>¡Sé el primero en crear una!</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string nombreJugador = "";
+    private string nombrePartida = "";
+    private int maxJugadores = 4;
+    private string dificultad = "Normal";
+    private bool partidaPrivada = false;
+    private string buscarTexto = "";
+    private List<PartidaInfo> partidasDisponibles = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            var resultado = await SessionStorage.GetAsync<string>("NombreJugador");
+            if (resultado.Success && !string.IsNullOrWhiteSpace(resultado.Value))
+            {
+                nombreJugador = resultado.Value;
+                await CargarPartidasDisponibles();
+            }
+            else
+            {
+                // Si no hay nombre guardado, redirigir al inicio
+                Navigation.NavigateTo("/");
+            }
+        }
+        catch
+        {
+            Navigation.NavigateTo("/");
+        }
+
+         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+
+    private async Task CrearPartida()
+    {
+        if (string.IsNullOrWhiteSpace(nombrePartida)) return;
+
+        // Aquí iría la lógica para crear la partida en el servidor
+        // Por ahora, simulamos la creación
+        var nuevaPartida = new PartidaInfo
+        {
+            Id = Guid.NewGuid().ToString(),
+            Nombre = nombrePartida,
+            MaxJugadores = maxJugadores,
+            JugadoresActuales = 1,
+            Dificultad = dificultad,
+            EsPrivada = partidaPrivada,
+            Creador = nombreJugador
+        };
+
+        partidasDisponibles.Insert(0, nuevaPartida);
+        
+        // Limpiar formulario
+        nombrePartida = "";
+        partidaPrivada = false;
+        
+        StateHasChanged();
+    }
+
+    private async Task BuscarPartidas()
+    {
+        await CargarPartidasDisponibles();
+        // Aquí se implementaría el filtrado basado en buscarTexto
+    }
+
+    private async Task ActualizarLista()
+    {
+        await CargarPartidasDisponibles();
+    }
+
+    private async Task CargarPartidasDisponibles()
+    {
+        // Simulamos partidas disponibles
+        await Task.Delay(100); // Simular llamada al servidor
+        
+        if (!partidasDisponibles.Any())
+        {
+            partidasDisponibles = new List<PartidaInfo>
+            {
+                new() { Id = "1", Nombre = "Batalla Épica", MaxJugadores = 4, JugadoresActuales = 2, Dificultad = "Normal", EsPrivada = false, Creador = "Player1" },
+                new() { Id = "2", Nombre = "Duelo Rápido", MaxJugadores = 2, JugadoresActuales = 1, Dificultad = "Fácil", EsPrivada = false, Creador = "Player2" },
+                new() { Id = "3", Nombre = "Torneo Extremo", MaxJugadores = 6, JugadoresActuales = 3, Dificultad = "Extremo", EsPrivada = true, Creador = "ProGamer" }
+            };
+        }
+    }
+
+    private void UnirseAPartida(string partidaId)
+    {
+        // Aquí iría la lógica para unirse a la partida
+        Navigation.NavigateTo($"/partida/{partidaId}");
+    }
+
+    private async Task VolverAlInicio()
+    {
+        await SessionStorage.DeleteAsync("NombreJugador");
+        Navigation.NavigateTo("/");
+    }
+
+    public class PartidaInfo
+    {
+        public string Id { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public int MaxJugadores { get; set; }
+        public int JugadoresActuales { get; set; }
+        public string Dificultad { get; set; } = "";
+        public bool EsPrivada { get; set; }
+        public string Creador { get; set; } = "";
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "dotnet.defaultSolution": "Viboras.csproj",
+    "omnisharp.enableEditorConfigSupport": true,
+    "omnisharp.enableRoslynAnalyzers": true,
+    "razor.format.enable": true,
+    "razor.completion.commitCharacters": [
+        ".",
+        "=",
+        " "
+    ],
+    "files.exclude": {
+        "**/bin": true,
+        "**/obj": true
+    },
+    "files.associations": {
+        "*.razor": "aspnetcorerazor"
+    },
+    "emmet.includeLanguages": {
+        "aspnetcorerazor": "html"
+    },
+    "html.suggest.html5": true,
+    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true
+}
