@@ -1,3 +1,6 @@
 /.vs
 /Viboras/obj
 /Viboras.Core/obj
+/Viboras.Core/bin
+/Viboras.Server/obj
+/Viboras/bin

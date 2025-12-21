@@ -1,0 +1,95 @@
+@inherits JuegoPage
+@page "/juego/{PartidaId}"
+@using Viboras.Components.Shared
+@using Viboras.Core.Models
+@rendermode InteractiveServer
+
+<PageTitle>Juego - Víboras</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Partida: @PartidaId</h3>
+        <div>
+            <button class="btn btn-outline-secondary me-2" @onclick="VolverAlLobby"><i class="bi bi-arrow-left"></i> Volver</button>
+            <span class="badge bg-secondary">Grid @GridSize x @GridSize</span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9 mb-3">
+            <div class="map-container">
+                <div tabindex="0" @onkeydown="HandleKey">
+                    <CanvasComponent @ref="canvasComponent" Width="@(GridSize * PixelSize)" Height="@(GridSize * PixelSize)" PixelSize="@PixelSize"></CanvasComponent>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 mb-3">
+            <div class="card mb-3">
+                <div class="card-header bg-dark text-white">Puntuación</div>
+                <div class="card-body p-0">
+                    <table class="table mb-0 small">
+                        <thead>
+                            <tr><th>Jugador</th><th class="text-end">Puntos</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Jugadores.OrderByDescending(s => s.Puntaje))
+                            {
+                                <tr>
+                                    <td>@s.Nombre</td>
+                                    <td class="text-end">@s.Puntaje</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Controles</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-center mb-2">
+                        <button class="btn btn-primary btn-sm" @onclick="() => SetDirection(DireccionEnum.Arriba)"><i class="bi bi-arrow-up"></i></button>
+                    </div>
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                        <button class="btn btn-primary btn-sm" @onclick="() => SetDirection(DireccionEnum.Izquierda)"><i class="bi bi-arrow-left"></i></button>
+                        <button class="btn btn-danger btn-sm" @onclick="ResetGame">Reset</button>
+                        <button class="btn btn-primary btn-sm" @onclick="() => SetDirection(DireccionEnum.Derecha)"><i class="bi bi-arrow-right"></i></button>
+                    </div>
+                    <div class="d-flex justify-content-center">
+                        <button class="btn btn-primary btn-sm" @onclick="() => SetDirection(DireccionEnum.Abajo)"><i class="bi bi-arrow-down"></i></button>
+                    </div>
+                    <div class="mt-3 text-center small text-muted">También puedes usar las flechas del teclado (clic en el mapa primero)</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Información</div>
+                <div class="card-body small">
+                    <p>Velocidad: @IntervalMs ms</p>
+                    <p>Tamaño mapa: @GridSize x @GridSize</p>
+                    <p>Longitud tu vibora: @UserSnakeLength</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.grid {
+    display: grid;
+    grid-template-columns: repeat(100, 6px);
+    grid-auto-rows: 6px;
+    gap: 1px;
+    outline: none;
+}
+.cell {
+    background-color: #f8f9fa;
+}
+.map-container {
+    overflow: auto;
+    border: 1px solid #ddd;
+    max-height: 75vh;
+    background: #e9ecef;
+}
+</style>

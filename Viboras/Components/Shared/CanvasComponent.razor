@@ -1,0 +1,66 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<canvas @ref="canvasRef" width="@Width" height="@Height" style="background:#f8f9fa; display:block;" tabindex="0"></canvas>
+
+@code {
+    private ElementReference canvasRef;
+
+    /// <summary>
+    /// Width of the canvas in pixels
+    /// </summary>
+    [Parameter] public int Width { get; set; } = 600;
+    /// <summary>
+    /// Height of the canvas in pixels
+    /// </summary>
+    [Parameter] public int Height { get; set; } = 600;
+    /// <summary>
+    /// Pixel size for each logical cell (used by JS drawing)
+    /// </summary>
+    [Parameter] public int PixelSize { get; set; } = 6;
+
+    private IJSObjectReference? module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // load module and initialize canvas
+            try
+            {
+                module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/canvasInterop.js");
+                await module.InvokeVoidAsync("initialize", canvasRef, PixelSize);
+            }
+            catch
+            {
+                // ignore for now
+            }
+        }
+    }
+
+    public async Task ClearAsync()
+    {
+        if (module is null) module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/canvasInterop.js");
+        await module.InvokeVoidAsync("clear", canvasRef);
+    }
+
+    public async Task DrawCellsAsync(IEnumerable<CellData> cells)
+    {
+        if (cells is null || !cells.Any()) return;
+        if (cells.First().Color != "Red")
+        {
+            var t = 0;
+        }
+
+        if (module is null) module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/canvasInterop.js");
+        await module.InvokeVoidAsync("drawCells", canvasRef, cells);
+    }
+
+    public async Task DrawGridAsync(int gridWidth, int gridHeight)
+    {
+        if (module is null) module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/canvasInterop.js");
+        await module.InvokeVoidAsync("drawGrid", canvasRef, gridWidth, gridHeight);
+    }
+
+    public record CellData(int X, int Y, string Color);
+}

@@ -7,15 +7,18 @@ namespace Viboras.Core
     {
         private List<Jugador> jugadores = new List<Jugador>();
         private readonly ConfigGame config;
-        private readonly Bloque[,] Mapa = new Bloque[100,100];
+        private readonly Bloque[,] Mapa;
 
-        public EventHandler<Bloque> ActulizarMapa;
+        public EventHandler<Bloque>? ActulizarMapa;
+        bool gameOver = false;
 
         public GameCore(ConfigGame config)
         {
             this.config = config;
+            Mapa = new Bloque[config.MapHorizontal, config.MapVertical];
             InicializaMapa();
         }
+                
 
         public Jugador AgregarJugador(string nombre)
         {
@@ -38,9 +41,8 @@ namespace Viboras.Core
         }
 
         public async Task Start()
-        {
-            bool gameOver = false;
-            
+        {            
+            gameOver = false;
             while (!gameOver)
             {
                 var inicio = DateTime.Now;
@@ -78,12 +80,13 @@ namespace Viboras.Core
                     Mapa[nuevaCabeza.Point.X, nuevaCabeza.Point.Y] = nuevaCabeza;
                     ActulizarMapa?.Invoke(this, nuevaCabeza);
                     // Remover la cola para simular movimiento
-                    if (jugador.Largo <= jugador.Cuerpo.Cola.Count)
+                    if (jugador.Cuerpo.Cola.Count > jugador.Largo)
                     {
                         var borrar = jugador.Cuerpo.Cola.Dequeue();
                         Mapa[borrar.Point.X, borrar.Point.Y].Tipo = TipoEnum.Vacio;
+                        borrar.Color = Color.White;
                         ActulizarMapa?.Invoke(this, borrar);
-                    }                    
+                    }
                 }
 
                 // Calculo de demora para mantener un turno de 1 segundo
@@ -100,13 +103,20 @@ namespace Viboras.Core
 
         private void InicializaMapa()
         {
-            for(int x = 0; x < 100; x++)
+            for(int x = 0; x < config.MapHorizontal; x++)
             {
-                for(int y = 0; y < 100; y++)
+                for(int y = 0; y < config.MapVertical; y++)
                 {
                     Mapa[x,y] = new Bloque { Tipo = TipoEnum.Vacio };
                 }
             }
+        }
+
+        public void Reset()
+        {
+            gameOver = true;
+            InicializaMapa();
+            jugadores.Clear();
         }
     }
 }

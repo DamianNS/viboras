@@ -1,0 +1,6 @@
+@Viboras.Server_HostAddress = http://localhost:5103
+
+GET {{Viboras.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

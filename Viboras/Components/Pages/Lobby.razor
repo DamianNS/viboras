@@ -34,10 +34,14 @@
                         <div class="col-6">
                             <label class="form-label">Max. Jugadores</label>
                             <select class="form-select" @bind="maxJugadores">
-                                <option value="2">2 Jugadores</option>
-                                <option value="3">3 Jugadores</option>
+                                <option value="1">1 Jugador</option>
+                                <option value="2" disabled>2 Jugadores</option>
+                                <option value="3" disabled>3 Jugadores</option>
                                 <option value="4">4 Jugadores</option>
+                                <option value="5">5 Jugadores</option>
                                 <option value="6">6 Jugadores</option>
+                                <option value="7">7 Jugadores</option>
+                                <option value="8">8 Jugadores</option>
                             </select>
                         </div>
                         <div class="col-6">
@@ -158,11 +162,6 @@
          await base.OnAfterRenderAsync(firstRender);
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        
-    }
-
     private async Task CrearPartida()
     {
         if (string.IsNullOrWhiteSpace(nombrePartida)) return;
@@ -219,7 +218,7 @@
     private void UnirseAPartida(string partidaId)
     {
         // Aquí iría la lógica para unirse a la partida
-        Navigation.NavigateTo($"/partida/{partidaId}");
+        Navigation.NavigateTo($"/Juego/{partidaId}");
     }
 
     private async Task VolverAlInicio()

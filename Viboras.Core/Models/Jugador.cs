@@ -17,5 +17,7 @@ namespace Viboras.Core.Models
 
         public DireccionEnum Direccion { get; set; } = DireccionEnum.Derecha;
         public int Largo { get; set; } = 5;
+
+        public int Puntaje { get; set; } = 0;
     }
 }
